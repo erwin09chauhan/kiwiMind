@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/KiwiMind.Api/KiwiMind.Api.csproj" />
+    <Project Path="src/KiwiMind.Application/KiwiMind.Application.csproj" />
+    <Project Path="src/KiwiMind.Domain/KiwiMind.Domain.csproj" />
+    <Project Path="src/KiwiMind.Infrastructure/KiwiMind.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/KiwiMind.IntegrationTests/KiwiMind.IntegrationTests.csproj" />
+    <Project Path="tests/KiwiMind.UnitTests/KiwiMind.UnitTests.csproj" />
+  </Folder>
+</Solution>
