@@ -1,9 +1,10 @@
+using KiwiMind.Application.Common.Interfaces;
 using KiwiMind.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace KiwiMind.Infrastructure.Persistence;
 
-public class KiwiMindDbContext(DbContextOptions<KiwiMindDbContext> options) : DbContext(options)
+public class KiwiMindDbContext(DbContextOptions<KiwiMindDbContext> options) : DbContext(options), IApplicationDbContext
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();

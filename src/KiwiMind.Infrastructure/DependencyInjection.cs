@@ -1,3 +1,6 @@
+using KiwiMind.Application.Common.Interfaces;
+using KiwiMind.Application.Common.Settings;
+using KiwiMind.Infrastructure.Auth;
 using KiwiMind.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -14,6 +17,11 @@ public static class DependencyInjection
 
         services.AddDbContext<KiwiMindDbContext>(options =>
             options.UseNpgsql(connectionString, npgsql => npgsql.UseVector()));
+        services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<KiwiMindDbContext>());
+
+        services.Configure<JwtSettings>(options => configuration.GetSection(JwtSettings.SectionName).Bind(options));
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        services.AddSingleton<ITokenService, TokenService>();
 
         return services;
     }

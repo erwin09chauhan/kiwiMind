@@ -24,6 +24,9 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Default: "Host=db;Database=kiwimind;Username=postgres;Password=postgres"
+      Jwt__Secret: "dev-only-local-signing-key-not-for-production-use-1234567890"
+      Jwt__Issuer: "KiwiMind"
+      Jwt__Audience: "KiwiMind"
     depends_on:
       db:
         condition: service_healthy
