@@ -12,6 +12,7 @@ public class ApplicationExceptionHandler : IExceptionHandler
             EmailAlreadyInUseException => StatusCodes.Status409Conflict,
             InvalidCredentialsException => StatusCodes.Status401Unauthorized,
             InvalidRefreshTokenException => StatusCodes.Status401Unauthorized,
+            NotFoundException => StatusCodes.Status404NotFound,
             _ => 0
         };
 

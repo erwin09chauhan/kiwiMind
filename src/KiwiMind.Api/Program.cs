@@ -1,6 +1,7 @@
 using System.Text;
 using KiwiMind.Api;
 using KiwiMind.Application.Auth.Login;
+using KiwiMind.Application.Common.Interfaces;
 using KiwiMind.Application.Common.Settings;
 using KiwiMind.Infrastructure;
 using KiwiMind.Infrastructure.Persistence;
@@ -17,6 +18,8 @@ builder.Services.AddHealthChecks()
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(LoginCommand).Assembly));
 builder.Services.AddExceptionHandler<ApplicationExceptionHandler>();
 builder.Services.AddProblemDetails();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("Jwt settings not configured.");
