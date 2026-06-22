@@ -13,6 +13,7 @@ public class ApplicationExceptionHandler : IExceptionHandler
             InvalidCredentialsException => StatusCodes.Status401Unauthorized,
             InvalidRefreshTokenException => StatusCodes.Status401Unauthorized,
             NotFoundException => StatusCodes.Status404NotFound,
+            InvalidFileException => StatusCodes.Status400BadRequest,
             _ => 0
         };
 

@@ -2,6 +2,7 @@ using KiwiMind.Application.Common.Interfaces;
 using KiwiMind.Application.Common.Settings;
 using KiwiMind.Infrastructure.Auth;
 using KiwiMind.Infrastructure.Persistence;
+using KiwiMind.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,9 @@ public static class DependencyInjection
         services.Configure<JwtSettings>(options => configuration.GetSection(JwtSettings.SectionName).Bind(options));
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ITokenService, TokenService>();
+
+        services.Configure<BlobStorageSettings>(options => configuration.GetSection(BlobStorageSettings.SectionName).Bind(options));
+        services.AddSingleton<IBlobStorageService, BlobStorageService>();
 
         return services;
     }

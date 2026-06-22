@@ -15,6 +15,14 @@ services:
       timeout: 5s
       retries: 10
 
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: "azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --skipApiVersionCheck"
+    ports:
+      - "10000:10000"
+    volumes:
+      - kiwimind-blob-data:/data
+
   api:
     build:
       context: .
@@ -27,9 +35,13 @@ services:
       Jwt__Secret: "dev-only-local-signing-key-not-for-production-use-1234567890"
       Jwt__Issuer: "KiwiMind"
       Jwt__Audience: "KiwiMind"
+      BlobStorage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
     depends_on:
       db:
         condition: service_healthy
+      azurite:
+        condition: service_started
 
 volumes:
   kiwimind-db-data:
+  kiwimind-blob-data:
