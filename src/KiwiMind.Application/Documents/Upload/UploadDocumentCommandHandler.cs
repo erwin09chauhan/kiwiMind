@@ -9,7 +9,8 @@ namespace KiwiMind.Application.Documents.Upload;
 public class UploadDocumentCommandHandler(
     IApplicationDbContext db,
     ICurrentUserService currentUser,
-    IBlobStorageService blobStorage) : IRequestHandler<UploadDocumentCommand, DocumentDto>
+    IBlobStorageService blobStorage,
+    IDocumentIngestionQueue ingestionQueue) : IRequestHandler<UploadDocumentCommand, DocumentDto>
 {
     private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -50,6 +51,8 @@ public class UploadDocumentCommandHandler(
 
         db.Documents.Add(document);
         await db.SaveChangesAsync(cancellationToken);
+
+        await ingestionQueue.EnqueueAsync(document.Id, cancellationToken);
 
         return new DocumentDto(document.Id, document.FileName, document.Status, document.PageCount, document.CreatedAt);
     }

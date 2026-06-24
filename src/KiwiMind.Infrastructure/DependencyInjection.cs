@@ -1,6 +1,7 @@
 using KiwiMind.Application.Common.Interfaces;
 using KiwiMind.Application.Common.Settings;
 using KiwiMind.Infrastructure.Auth;
+using KiwiMind.Infrastructure.Ingestion;
 using KiwiMind.Infrastructure.Persistence;
 using KiwiMind.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,12 @@ public static class DependencyInjection
 
         services.Configure<BlobStorageSettings>(options => configuration.GetSection(BlobStorageSettings.SectionName).Bind(options));
         services.AddSingleton<IBlobStorageService, BlobStorageService>();
+
+        services.AddSingleton<IDocumentIngestionQueue, DocumentIngestionQueue>();
+        services.AddSingleton<ITextChunker, TextChunker>();
+        services.AddSingleton<IDocumentTextExtractor, DocumentTextExtractor>();
+        services.AddSingleton<IEmbeddingService, FakeEmbeddingService>();
+        services.AddHostedService<IngestionWorker>();
 
         return services;
     }
