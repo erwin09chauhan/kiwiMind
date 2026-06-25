@@ -4,6 +4,7 @@ using KiwiMind.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Pgvector;
 
 namespace KiwiMind.Application.Ingestion;
 
@@ -42,7 +43,7 @@ public class ProcessDocumentCommandHandler(
                     DocumentId = document.Id,
                     ChunkIndex = chunks[i].Index,
                     Content = chunks[i].Content,
-                    Embedding = embeddings[i],
+                    Embedding = new Vector(embeddings[i]),
                     TokenCount = chunks[i].TokenCount
                 });
             }

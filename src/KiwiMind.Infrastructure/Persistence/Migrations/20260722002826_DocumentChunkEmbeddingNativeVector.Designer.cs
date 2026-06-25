@@ -3,6 +3,7 @@ using System;
 using KiwiMind.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace KiwiMind.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(KiwiMindDbContext))]
-    partial class KiwiMindDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260722002826_DocumentChunkEmbeddingNativeVector")]
+    partial class DocumentChunkEmbeddingNativeVector
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

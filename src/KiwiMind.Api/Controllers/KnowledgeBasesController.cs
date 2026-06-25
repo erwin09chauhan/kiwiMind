@@ -3,6 +3,7 @@ using KiwiMind.Application.KnowledgeBases.Create;
 using KiwiMind.Application.KnowledgeBases.Delete;
 using KiwiMind.Application.KnowledgeBases.Get;
 using KiwiMind.Application.KnowledgeBases.List;
+using KiwiMind.Application.Retrieval;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -40,5 +41,13 @@ public class KnowledgeBasesController(ISender sender) : ControllerBase
     {
         await sender.Send(new DeleteKnowledgeBaseCommand(id), cancellationToken);
         return NoContent();
+    }
+
+    [HttpGet("{id:guid}/search")]
+    public async Task<ActionResult<List<ChunkSearchResultDto>>> Search(
+        Guid id, [FromQuery] string query, [FromQuery] int topK = 5, CancellationToken cancellationToken = default)
+    {
+        var result = await sender.Send(new SearchKnowledgeBaseQuery(id, query, topK), cancellationToken);
+        return Ok(result);
     }
 }
