@@ -1,18 +1,18 @@
 using KiwiMind.Application.Common.Exceptions;
 using KiwiMind.Application.Common.Interfaces;
-using KiwiMind.Application.Retrieval;
 using KiwiMind.Domain.Entities;
 using KiwiMind.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace KiwiMind.Application.Conversations.SendMessage;
 
 public class SendMessageCommandHandler(
     IApplicationDbContext db,
     ICurrentUserService currentUser,
-    ISender sender,
-    IChatCompletionService chatCompletionService) : IRequestHandler<SendMessageCommand, MessageDto>
+    IChatAgent chatAgent,
+    ILogger<SendMessageCommandHandler> logger) : IRequestHandler<SendMessageCommand, MessageDto>
 {
     public async Task<MessageDto> Handle(SendMessageCommand request, CancellationToken cancellationToken)
     {
@@ -38,22 +38,20 @@ public class SendMessageCommandHandler(
             Content = request.Content
         });
 
-        var context = await sender.Send(
-            new SearchKnowledgeBaseQuery(request.KnowledgeBaseId, request.Content, TopK: 5), cancellationToken);
+        var agentResult = await chatAgent.AskAsync(request.KnowledgeBaseId, history, request.Content, cancellationToken);
 
-        var answer = await chatCompletionService.GenerateAnswerAsync(context, history, request.Content, cancellationToken);
-
-        var citations = context
-            .Select(c => new Citation { DocumentId = c.DocumentId, ChunkId = c.ChunkId, Page = c.Page })
-            .ToList();
+        foreach (var toolCall in agentResult.ToolCalls)
+        {
+            logger.LogInformation("Agent called tool {ToolName} with arguments {Arguments}", toolCall.ToolName, toolCall.Arguments);
+        }
 
         var assistantMessage = new Message
         {
             ConversationId = request.ConversationId,
             Role = MessageRole.Assistant,
-            Content = answer,
-            Citations = citations,
-            TokensUsed = answer.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length
+            Content = agentResult.Answer,
+            Citations = agentResult.Citations,
+            TokensUsed = agentResult.Answer.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length
         };
         db.Messages.Add(assistantMessage);
 

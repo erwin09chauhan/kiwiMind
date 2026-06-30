@@ -1,5 +1,6 @@
 using KiwiMind.Application.Common.Interfaces;
 using KiwiMind.Application.Common.Settings;
+using KiwiMind.Infrastructure.Agent;
 using KiwiMind.Infrastructure.Auth;
 using KiwiMind.Infrastructure.Chat;
 using KiwiMind.Infrastructure.Ingestion;
@@ -34,6 +35,8 @@ public static class DependencyInjection
         services.AddSingleton<IDocumentTextExtractor, DocumentTextExtractor>();
         services.AddSingleton<IEmbeddingService, FakeEmbeddingService>();
         services.AddSingleton<IChatCompletionService, FakeChatCompletionService>();
+        services.AddScoped<KnowledgeBasePlugin>();
+        services.AddScoped<IChatAgent, SemanticKernelChatAgent>();
         services.AddHostedService<IngestionWorker>();
 
         return services;
