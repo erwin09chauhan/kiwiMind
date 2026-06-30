@@ -3,6 +3,7 @@ using KiwiMind.Application.Conversations.Create;
 using KiwiMind.Application.Conversations.Delete;
 using KiwiMind.Application.Conversations.Get;
 using KiwiMind.Application.Conversations.List;
+using KiwiMind.Application.Conversations.SendMessage;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -41,6 +42,15 @@ public class ConversationsController(ISender sender) : ControllerBase
         await sender.Send(new DeleteConversationCommand(knowledgeBaseId, id), cancellationToken);
         return NoContent();
     }
+
+    [HttpPost("{id:guid}/messages")]
+    public async Task<ActionResult<MessageDto>> SendMessage(
+        Guid knowledgeBaseId, Guid id, [FromBody] SendMessageRequest request, CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new SendMessageCommand(knowledgeBaseId, id, request.Content), cancellationToken);
+        return Ok(result);
+    }
 }
 
 public record CreateConversationRequest(string Title);
+public record SendMessageRequest(string Content);

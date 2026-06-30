@@ -1,6 +1,7 @@
 using KiwiMind.Application.Common.Interfaces;
 using KiwiMind.Application.Common.Settings;
 using KiwiMind.Infrastructure.Auth;
+using KiwiMind.Infrastructure.Chat;
 using KiwiMind.Infrastructure.Ingestion;
 using KiwiMind.Infrastructure.Persistence;
 using KiwiMind.Infrastructure.Storage;
@@ -32,6 +33,7 @@ public static class DependencyInjection
         services.AddSingleton<ITextChunker, TextChunker>();
         services.AddSingleton<IDocumentTextExtractor, DocumentTextExtractor>();
         services.AddSingleton<IEmbeddingService, FakeEmbeddingService>();
+        services.AddSingleton<IChatCompletionService, FakeChatCompletionService>();
         services.AddHostedService<IngestionWorker>();
 
         return services;
