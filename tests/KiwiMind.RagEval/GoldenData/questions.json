@@ -1,0 +1,14 @@
+[
+  { "question": "What is the fastest land animal?", "idealAnswer": "The cheetah is the fastest land animal, reaching speeds over 100 kilometers per hour.", "expectedSourceFileName": "animals.txt" },
+  { "question": "How many hearts does an octopus have?", "idealAnswer": "An octopus has three hearts.", "expectedSourceFileName": "animals.txt" },
+  { "question": "Which animal migrates the longest distance each year?", "idealAnswer": "The Arctic tern travels from the Arctic to the Antarctic and back each year.", "expectedSourceFileName": "animals.txt" },
+  { "question": "How do dolphins communicate?", "idealAnswer": "Dolphins communicate using clicks and whistles.", "expectedSourceFileName": "animals.txt" },
+  { "question": "How fast can bamboo grow?", "idealAnswer": "Some bamboo species can grow nearly a meter in a single day.", "expectedSourceFileName": "plants.txt" },
+  { "question": "How do cacti survive in the desert?", "idealAnswer": "Cacti store water in their thick stems and their spines reduce water loss.", "expectedSourceFileName": "plants.txt" },
+  { "question": "What does the Venus flytrap eat?", "idealAnswer": "The Venus flytrap traps and eats insects.", "expectedSourceFileName": "plants.txt" },
+  { "question": "How old can a giant sequoia tree live to be?", "idealAnswer": "Some giant sequoias live for over 3,000 years.", "expectedSourceFileName": "plants.txt" },
+  { "question": "What is the highest mountain on Earth?", "idealAnswer": "Mount Everest is the highest mountain above sea level, at 8,849 meters.", "expectedSourceFileName": "geography.txt" },
+  { "question": "Which river carries the most water in the world?", "idealAnswer": "The Amazon River carries more water than any other river in the world.", "expectedSourceFileName": "geography.txt" },
+  { "question": "What is the deepest point in the ocean?", "idealAnswer": "The Mariana Trench is the deepest oceanic trench, reaching nearly 11,000 meters.", "expectedSourceFileName": "geography.txt" },
+  { "question": "Which lake holds the most unfrozen fresh water?", "idealAnswer": "Lake Baikal holds roughly 20 percent of the planet's unfrozen fresh water.", "expectedSourceFileName": "geography.txt" }
+]

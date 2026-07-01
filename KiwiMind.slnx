@@ -7,6 +7,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/KiwiMind.IntegrationTests/KiwiMind.IntegrationTests.csproj" />
+    <Project Path="tests/KiwiMind.RagEval/KiwiMind.RagEval.csproj" />
     <Project Path="tests/KiwiMind.UnitTests/KiwiMind.UnitTests.csproj" />
   </Folder>
 </Solution>
