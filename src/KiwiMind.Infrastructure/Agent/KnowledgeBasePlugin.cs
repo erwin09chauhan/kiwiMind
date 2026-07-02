@@ -13,6 +13,15 @@ public class KnowledgeBasePlugin(IApplicationDbContext db, MediatR.ISender sende
     public async Task<List<ChunkSearchResultDto>> SearchKnowledgeBaseAsync(Guid knowledgeBaseId, string query, CancellationToken cancellationToken = default) =>
         await sender.Send(new SearchKnowledgeBaseQuery(knowledgeBaseId, query), cancellationToken);
 
+    [KernelFunction("list_documents")]
+    [Description("Lists all documents in the knowledge base with their file name and processing status.")]
+    public async Task<List<DocumentMetadataResult>> ListDocumentsAsync(Guid knowledgeBaseId, CancellationToken cancellationToken = default) =>
+        await db.Documents
+            .Where(d => d.KnowledgeBaseId == knowledgeBaseId)
+            .OrderBy(d => d.FileName)
+            .Select(d => new DocumentMetadataResult(d.FileName, d.Status.ToString(), d.PageCount, d.CreatedAt))
+            .ToListAsync(cancellationToken);
+
     [KernelFunction("get_document_metadata")]
     [Description("Retrieves metadata (file name, processing status, page count, upload date) for a specific document.")]
     public async Task<DocumentMetadataResult?> GetDocumentMetadataAsync(Guid documentId, CancellationToken cancellationToken = default)

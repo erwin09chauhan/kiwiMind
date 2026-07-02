@@ -32,6 +32,20 @@ public class SemanticKernelChatAgent(
 
         var toolCalls = new List<AgentToolCall>();
 
+        if (lowerQuestion.Contains("what documents") || lowerQuestion.Contains("which documents")
+            || lowerQuestion.Contains("list documents") || lowerQuestion.Contains("what do you know")
+            || lowerQuestion.Contains("which files") || lowerQuestion.Contains("what files"))
+        {
+            var args = new KernelArguments { ["knowledgeBaseId"] = knowledgeBaseId };
+            toolCalls.Add(new AgentToolCall("list_documents", knowledgeBaseId.ToString()));
+            var documents = await kernel.InvokeAsync<List<DocumentMetadataResult>>("KnowledgeBase", "list_documents", args, cancellationToken)
+                ?? [];
+            var answer = documents.Count == 0
+                ? "This knowledge base has no documents yet."
+                : "This knowledge base contains: " + string.Join(", ", documents.Select(d => $"{d.FileName} ({d.Status})")) + ".";
+            return new AgentResult(answer, [], toolCalls);
+        }
+
         if (lowerQuestion.Contains("compare") && mentionedDocs.Count >= 2)
         {
             var args = new KernelArguments { ["documentIdA"] = mentionedDocs[0].Id, ["documentIdB"] = mentionedDocs[1].Id };
