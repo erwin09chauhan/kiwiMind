@@ -1,23 +1,22 @@
 import { Link, Outlet } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { useAuth } from '@/context/AuthContext'
+import { Sparkles } from 'lucide-react'
+import { AccountMenu } from '@/components/AccountMenu'
 
 export function Layout() {
-  const { logout } = useAuth()
-
   return (
     <div className="flex min-h-svh flex-col">
-      <header className="border-b">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link to="/knowledge-bases" className="text-lg font-semibold">
-            KiwiMind
+      <header className="bg-background/80 sticky top-0 z-40 border-b backdrop-blur-md">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-2.5">
+          <Link to="/knowledge-bases" className="flex items-center gap-2">
+            <span className="bg-primary text-primary-foreground flex size-7 items-center justify-center rounded-lg">
+              <Sparkles className="size-4" />
+            </span>
+            <span className="text-[15px] font-semibold tracking-tight">KiwiMind</span>
           </Link>
-          <Button variant="outline" size="sm" onClick={logout}>
-            Log out
-          </Button>
+          <AccountMenu />
         </div>
       </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
+      <main className="mx-auto flex w-full min-h-0 max-w-4xl flex-1 flex-col px-4 py-8 sm:py-10">
         <Outlet />
       </main>
     </div>
