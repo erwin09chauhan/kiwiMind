@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { ChevronLeft, Sparkles } from 'lucide-react'
 import { conversationsApi, documentsApi } from '@/lib/api'
 import { useChatConnection } from '@/hooks/useChatConnection'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import type { Citation, MessageDto } from '@/types/api'
+import { MessageItem } from '@/components/conversation/MessageItem'
+import { ChatComposer } from '@/components/conversation/ChatComposer'
+import type { MessageDto } from '@/types/api'
 
 export function ConversationPage() {
   const { id: knowledgeBaseId, conversationId } = useParams<{ id: string; conversationId: string }>()
@@ -46,24 +46,23 @@ export function ConversationPage() {
   const [draft, setDraft] = useState('')
   const isStreaming = streamingText !== null
 
-  function handleSend(e?: FormEvent) {
-    e?.preventDefault()
+  function handleSend() {
     const content = draft.trim()
     if (!content || isStreaming) return
 
     setLocalMessages((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), role: 'User', content, citations: [], tokensUsed: 0, createdAt: new Date().toISOString() },
+      {
+        id: crypto.randomUUID(),
+        role: 'User',
+        content,
+        citations: [],
+        tokensUsed: 0,
+        createdAt: new Date().toISOString(),
+      },
     ])
     setDraft('')
     void sendMessage(content)
-  }
-
-  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
   }
 
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -71,101 +70,71 @@ export function ConversationPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [localMessages, streamingText])
 
+  const isEmpty = localMessages.length === 0 && !isStreaming
+
   return (
-    <div className="flex h-[calc(100svh-6rem)] flex-col gap-4">
-      <div>
-        <Link to={`/knowledge-bases/${kbId}`} className="text-muted-foreground text-sm underline">
-          ← Back to knowledge base
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <Link
+          to={`/knowledge-bases/${kbId}`}
+          className="text-muted-foreground hover:text-foreground inline-flex w-fit items-center gap-1 text-sm transition-colors"
+        >
+          <ChevronLeft className="size-4" />
+          Back
         </Link>
-        <h1 className="text-2xl font-semibold">{conversation?.title ?? '…'}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{conversation?.title ?? '…'}</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto rounded-md border p-4">
-        <div className="flex flex-col gap-3">
-          {localMessages.length === 0 && !isStreaming && (
-            <p className="text-muted-foreground">No messages yet. Ask a question below.</p>
-          )}
-          {localMessages.map((message) => (
-            <MessageBubble key={message.id} message={message} fileNameByDocumentId={fileNameByDocumentId} />
-          ))}
-          {isStreaming && (
-            <div className="flex flex-col gap-1 rounded-md border px-4 py-3">
-              <Badge variant="default" className="w-fit">
-                Assistant
-              </Badge>
-              <p className="whitespace-pre-wrap">
-                {streamingText}
-                <span className="animate-pulse">▍</span>
-              </p>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto flex min-h-full max-w-3xl flex-col gap-6 py-2">
+          {isEmpty && (
+            <div className="my-auto flex flex-col items-center gap-3 text-center">
+              <span className="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-2xl">
+                <Sparkles className="size-6" />
+              </span>
+              <div className="flex flex-col gap-1">
+                <p className="font-medium">Ask anything about this knowledge base</p>
+                <p className="text-muted-foreground text-sm">
+                  Answers are grounded in your documents, with citations.
+                </p>
+              </div>
             </div>
           )}
+
+          {localMessages.map((message) => (
+            <MessageItem
+              key={message.id}
+              role={message.role}
+              content={message.content}
+              citations={message.citations}
+              fileNameByDocumentId={fileNameByDocumentId}
+            />
+          ))}
+
+          {isStreaming && (
+            <MessageItem
+              role="Assistant"
+              content={streamingText ?? ''}
+              streaming
+              fileNameByDocumentId={fileNameByDocumentId}
+            />
+          )}
+
           <div ref={bottomRef} />
         </div>
       </div>
 
-      {error && (
-        <p className="text-destructive text-sm">
-          {error}{' '}
-          <button type="button" onClick={clearError} className="underline">
-            Dismiss
-          </button>
-        </p>
-      )}
-
-      <form onSubmit={handleSend} className="flex gap-2">
-        <Textarea
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask a question about this knowledge base…"
-          rows={2}
-          disabled={isStreaming}
-        />
-        <Button type="submit" disabled={isStreaming || !draft.trim()}>
-          Send
-        </Button>
-      </form>
+      <div className="mx-auto w-full max-w-3xl">
+        {error && (
+          <div className="border-destructive/30 bg-destructive/5 text-destructive mb-2 flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm">
+            <span>{error}</span>
+            <button type="button" onClick={clearError} className="shrink-0 font-medium underline">
+              Dismiss
+            </button>
+          </div>
+        )}
+        <ChatComposer value={draft} onChange={setDraft} onSubmit={handleSend} disabled={isStreaming} />
+      </div>
     </div>
   )
-}
-
-function MessageBubble({
-  message,
-  fileNameByDocumentId,
-}: {
-  message: MessageDto
-  fileNameByDocumentId: Map<string, string>
-}) {
-  const uniqueCitations = useMemo(() => dedupeCitations(message.citations), [message.citations])
-
-  return (
-    <div className="flex flex-col gap-1 rounded-md border px-4 py-3">
-      <Badge variant={message.role === 'User' ? 'secondary' : 'default'} className="w-fit">
-        {message.role}
-      </Badge>
-      <p className="whitespace-pre-wrap">{message.content}</p>
-      {uniqueCitations.length > 0 && (
-        <div className="mt-1 flex flex-wrap gap-1">
-          {uniqueCitations.map((citation) => (
-            <Badge
-              key={citation.chunkId}
-              variant="outline"
-              title={citation.page != null ? `Page ${citation.page}` : undefined}
-            >
-              {fileNameByDocumentId.get(citation.documentId) ?? 'Unknown document'}
-            </Badge>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function dedupeCitations(citations: Citation[]): Citation[] {
-  const seen = new Set<string>()
-  return citations.filter((c) => {
-    if (seen.has(c.documentId)) return false
-    seen.add(c.documentId)
-    return true
-  })
 }
