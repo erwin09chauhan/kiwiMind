@@ -5,10 +5,15 @@ using KiwiMind.Api.Hubs;
 using KiwiMind.Application.Auth.Login;
 using KiwiMind.Application.Common.Interfaces;
 using KiwiMind.Application.Common.Settings;
+using KiwiMind.Application.Common.Telemetry;
 using KiwiMind.Infrastructure;
 using KiwiMind.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +29,29 @@ builder.Services.AddProblemDetails();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddSignalR();
+
+var appInsightsConnectionString = builder.Configuration["ApplicationInsights:ConnectionString"];
+var otel = builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService("KiwiMind.Api"))
+    .WithTracing(tracing => tracing
+        .AddSource(KiwiMindTelemetry.SourceName)
+        .AddSource("Npgsql")
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation())
+    .WithMetrics(metrics => metrics
+        .AddMeter(KiwiMindTelemetry.SourceName)
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation());
+
+if (!string.IsNullOrEmpty(appInsightsConnectionString))
+{
+    otel.UseAzureMonitor(options => options.ConnectionString = appInsightsConnectionString);
+}
+else
+{
+    otel.WithTracing(tracing => tracing.AddConsoleExporter());
+    otel.WithMetrics(metrics => metrics.AddConsoleExporter());
+}
 
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("Jwt settings not configured.");

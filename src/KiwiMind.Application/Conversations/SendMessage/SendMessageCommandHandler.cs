@@ -1,5 +1,6 @@
 using KiwiMind.Application.Common.Exceptions;
 using KiwiMind.Application.Common.Interfaces;
+using KiwiMind.Application.Common.Telemetry;
 using KiwiMind.Domain.Entities;
 using KiwiMind.Domain.Enums;
 using MediatR;
@@ -56,6 +57,9 @@ public class SendMessageCommandHandler(
         db.Messages.Add(assistantMessage);
 
         await db.SaveChangesAsync(cancellationToken);
+
+        KiwiMindTelemetry.TokensUsed.Add(assistantMessage.TokensUsed,
+            new KeyValuePair<string, object?>("knowledge_base_id", request.KnowledgeBaseId));
 
         return new MessageDto(
             assistantMessage.Id,

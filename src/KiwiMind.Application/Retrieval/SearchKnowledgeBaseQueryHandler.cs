@@ -1,5 +1,6 @@
 using KiwiMind.Application.Common.Exceptions;
 using KiwiMind.Application.Common.Interfaces;
+using KiwiMind.Application.Common.Telemetry;
 using KiwiMind.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,10 @@ public class SearchKnowledgeBaseQueryHandler(
 {
     public async Task<List<ChunkSearchResultDto>> Handle(SearchKnowledgeBaseQuery request, CancellationToken cancellationToken)
     {
+        using var activity = KiwiMindTelemetry.ActivitySource.StartActivity("rag.search_knowledge_base");
+        activity?.SetTag("kiwimind.knowledge_base_id", request.KnowledgeBaseId);
+        activity?.SetTag("kiwimind.top_k", request.TopK);
+
         var knowledgeBaseExists = await db.KnowledgeBases
             .AnyAsync(kb => kb.Id == request.KnowledgeBaseId && kb.UserId == currentUser.UserId, cancellationToken);
         if (!knowledgeBaseExists)
@@ -25,7 +30,7 @@ public class SearchKnowledgeBaseQueryHandler(
         var embeddings = await embeddingService.GenerateEmbeddingsAsync([request.Query], cancellationToken);
         var queryVector = new Vector(embeddings[0]);
 
-        return await db.DocumentChunks
+        var results = await db.DocumentChunks
             .Where(c => c.Document.KnowledgeBaseId == request.KnowledgeBaseId)
             .OrderBy(c => c.Embedding.CosineDistance(queryVector))
             .Take(request.TopK)
@@ -38,5 +43,8 @@ public class SearchKnowledgeBaseQueryHandler(
                 c.Page,
                 c.Embedding.CosineDistance(queryVector)))
             .ToListAsync(cancellationToken);
+
+        activity?.SetTag("kiwimind.result_count", results.Count);
+        return results;
     }
 }
