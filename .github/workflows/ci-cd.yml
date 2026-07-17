@@ -1,0 +1,133 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  NODE_VERSION: '22.x'
+
+jobs:
+  build-and-test:
+    name: Build & test (.NET)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      # KiwiMind.RagEval uses Testcontainers to spin up a real pgvector/pgvector
+      # Postgres container - Docker is preinstalled on GitHub-hosted runners, so
+      # this runs for real rather than being skipped.
+      - name: Test
+        run: dotnet test --no-build --configuration Release --logger "console;verbosity=normal"
+
+  frontend-build:
+    name: Build & typecheck (frontend)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 7
+
+  build-and-push-image:
+    name: Build & push API image
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ACR_LOGIN_SERVER != ''
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.image-tag.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to ACR
+        run: az acr login --name ${{ vars.ACR_NAME }}
+
+      - name: Compute image tag
+        id: image-tag
+        run: echo "image=${{ vars.ACR_LOGIN_SERVER }}/kiwimind-api:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        run: |
+          docker build -t "${{ steps.image-tag.outputs.image }}" -t "${{ vars.ACR_LOGIN_SERVER }}/kiwimind-api:latest" .
+          docker push "${{ steps.image-tag.outputs.image }}"
+          docker push "${{ vars.ACR_LOGIN_SERVER }}/kiwimind-api:latest"
+
+  deploy-api:
+    name: Deploy API to Container Apps
+    needs: build-and-push-image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ACR_LOGIN_SERVER != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Update Container App image
+        run: |
+          az containerapp update \
+            --name ${{ vars.CONTAINER_APP_NAME }} \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
+            --image ${{ needs.build-and-push-image.outputs.image }}
+
+  deploy-frontend:
+    name: Deploy frontend
+    needs: frontend-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.AZURE_STATIC_WEB_APPS_API_TOKEN != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: 'upload'
+          app_location: 'frontend/dist'
+          skip_app_build: true
