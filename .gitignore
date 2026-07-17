@@ -69,6 +69,10 @@ docker-compose.override.yml
 .azure/
 *.bicepparam.local
 
+## Local tooling / working notes (not part of the shipped project)
+.claude/
+kiwiMind-build-sheet.md
+
 ## OS
 .DS_Store
 Thumbs.db
