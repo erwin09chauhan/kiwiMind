@@ -13,6 +13,9 @@ param containerRegistryLoginServer string
 @description('Full container image reference, e.g. myregistry.azurecr.io/kiwimind-api:latest.')
 param containerImage string
 
+@description('Resource ID of the user-assigned managed identity used to pull images from the ACR. Must already hold AcrPull on the registry before this app is created.')
+param userAssignedIdentityId string
+
 @description('Target port the container listens on.')
 param targetPort int = 8080
 
@@ -37,7 +40,10 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: name
   location: location
   identity: {
-    type: 'SystemAssigned'
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentityId}': {}
+    }
   }
   properties: {
     environmentId: environmentId
@@ -51,7 +57,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
       registries: [
         {
           server: containerRegistryLoginServer
-          identity: 'system'
+          identity: userAssignedIdentityId
         }
       ]
       secrets: [
@@ -81,17 +87,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'Cors__AllowedOrigins__0', value: corsAllowedOrigin }
             { name: 'ApplicationInsights__ConnectionString', value: appInsightsConnectionString }
           ]
-          probes: [
-            {
-              type: 'Readiness'
-              httpGet: {
-                path: '/health'
-                port: targetPort
-              }
-              initialDelaySeconds: 5
-              periodSeconds: 10
-            }
-          ]
+          // No custom readiness probe: this app-specific /health path only
+          // exists on the real kiwimind-api image, not the bootstrap
+          // placeholder used for the very first deploy (before CI/CD has
+          // pushed anything). Container Apps' default TCP-level readiness
+          // check works for both.
         }
       ]
       scale: {
@@ -103,5 +103,4 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
 }
 
 output id string = containerApp.id
-output principalId string = containerApp.identity.principalId
 output fqdn string = containerApp.properties.configuration.ingress.fqdn

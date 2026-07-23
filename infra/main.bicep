@@ -9,6 +9,9 @@ param location string = resourceGroup().location
 @description('Azure region for Azure OpenAI - only available in a subset of regions.')
 param openAiLocation string = location
 
+@description('Azure region for the Static Web App - only available in a small subset of regions (East US 2, Central US, West US 2, West Europe, East Asia).')
+param staticWebAppLocation string = 'eastasia'
+
 @description('PostgreSQL administrator login name.')
 param postgresAdminLogin string = 'kiwimind_admin'
 
@@ -22,9 +25,6 @@ param jwtSecret string
 
 @description('Full container image reference for the API, e.g. myregistry.azurecr.io/kiwimind-api:latest. Leave as the placeholder for the first deployment - CI/CD updates this on every push.')
 param apiContainerImage string = 'mcr.microsoft.com/dotnet/samples:aspnetapp'
-
-@description('Deployed frontend origin, allowed via CORS. Leave empty until the frontend is deployed.')
-param corsAllowedOrigin string = ''
 
 @description('Deploy an Azure OpenAI account and model deployments. Requires OpenAI access to be approved for the subscription - see build sheet section 9.')
 param deployAzureOpenAi bool = false
@@ -85,6 +85,14 @@ module openAi 'modules/openai.bicep' = if (deployAzureOpenAi) {
   }
 }
 
+module staticWebApp 'modules/static-web-app.bicep' = {
+  name: 'static-web-app'
+  params: {
+    name: '${namePrefix}-web-${resourceToken}'
+    location: staticWebAppLocation
+  }
+}
+
 module containerAppsEnvironment 'modules/container-apps-environment.bicep' = {
   name: 'container-apps-environment'
   params: {
@@ -96,6 +104,35 @@ module containerAppsEnvironment 'modules/container-apps-environment.bicep' = {
 }
 
 var postgresConnectionString = 'Host=${postgres.outputs.fullyQualifiedDomainName};Database=${postgres.outputs.databaseName};Username=${postgresAdminLogin};Password=${postgresAdminPassword};Ssl Mode=Require'
+var frontendOrigin = 'https://${staticWebApp.outputs.defaultHostname}'
+
+// User-assigned managed identity the Container App uses to authenticate to the
+// ACR. Created up front so its AcrPull role assignment can exist *before* the
+// Container App tries to pull an image. A system-assigned identity can't work
+// here: its principalId only exists after the app is created, so the AcrPull
+// grant would land too late and the first revision 401s on the ACR token
+// exchange ("Operation expired").
+module apiIdentity 'modules/user-assigned-identity.bicep' = {
+  name: 'api-identity'
+  params: {
+    name: '${namePrefix}-api-id-${resourceToken}'
+    location: location
+  }
+}
+
+// Grant that identity permission to pull images from this specific registry
+// (scoped to the ACR, not the whole resource group), avoiding the need to store
+// registry admin credentials as a secret. Wrapped in its own module because a
+// role assignment's name/scope must be computable "at the start of deployment" -
+// a module output (principalId) referenced directly in a raw resource doesn't
+// qualify, but the same value passed as a parameter into a nested module does.
+module acrPullRoleAssignment 'modules/acr-pull-role-assignment.bicep' = {
+  name: 'acr-pull-role-assignment'
+  params: {
+    containerRegistryName: containerRegistry.outputs.name
+    principalId: apiIdentity.outputs.principalId
+  }
+}
 
 module containerApp 'modules/container-app.bicep' = {
   name: 'container-app'
@@ -105,34 +142,22 @@ module containerApp 'modules/container-app.bicep' = {
     environmentId: containerAppsEnvironment.outputs.id
     containerRegistryLoginServer: containerRegistry.outputs.loginServer
     containerImage: apiContainerImage
+    userAssignedIdentityId: apiIdentity.outputs.id
     postgresConnectionString: postgresConnectionString
     blobStorageConnectionString: storage.outputs.connectionString
     jwtSecret: jwtSecret
     appInsightsConnectionString: appInsights.outputs.connectionString
-    corsAllowedOrigin: corsAllowedOrigin
+    corsAllowedOrigin: frontendOrigin
   }
-}
-
-resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' existing = {
-  name: containerRegistry.outputs.name
-}
-
-// Grant the Container App's managed identity permission to pull images from
-// this specific registry (scoped to the ACR, not the whole resource group),
-// avoiding the need to store registry admin credentials as a secret.
-resource acrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(acr.id, containerApp.outputs.principalId, 'AcrPull')
-  scope: acr
-  properties: {
-    // AcrPull built-in role definition ID.
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
-    principalId: containerApp.outputs.principalId
-    principalType: 'ServicePrincipal'
-  }
+  // Ensure the AcrPull grant is in place before the first revision pulls.
+  dependsOn: [
+    acrPullRoleAssignment
+  ]
 }
 
 output apiUrl string = 'https://${containerApp.outputs.fqdn}'
 output containerRegistryLoginServer string = containerRegistry.outputs.loginServer
 output postgresFullyQualifiedDomainName string = postgres.outputs.fullyQualifiedDomainName
 output appInsightsConnectionString string = appInsights.outputs.connectionString
+#disable-next-line BCP318
 output openAiEndpoint string = deployAzureOpenAi ? openAi.outputs.endpoint : ''

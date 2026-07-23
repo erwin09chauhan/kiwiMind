@@ -72,6 +72,10 @@ docker-compose.override.yml
 ## Local tooling / working notes (not part of the shipped project)
 .claude/
 kiwiMind-build-sheet.md
+azure-cost-guardrails-checklist.md
+
+## Compiled Bicep output (regenerate with `az bicep build`, not source)
+infra/main.json
 
 ## OS
 .DS_Store
