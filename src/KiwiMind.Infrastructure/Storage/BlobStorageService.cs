@@ -40,6 +40,10 @@ public class BlobStorageService : IBlobStorageService
         return await blobClient.OpenReadAsync(cancellationToken: cancellationToken);
     }
 
-    private string GetBlobNameFromUri(string blobUri) =>
-        Uri.UnescapeDataString(new Uri(blobUri).AbsolutePath.TrimStart('/').Split('/', 3)[^1]);
+    // BlobUriBuilder correctly extracts the blob name from both host-style
+    // Azure URLs (account in the hostname) and path-style emulator URLs
+    // (account as a path segment, e.g. Azurite). A hand-rolled segment split
+    // silently drops the knowledge-base folder on one of the two layouts.
+    private static string GetBlobNameFromUri(string blobUri) =>
+        new BlobUriBuilder(new Uri(blobUri)).BlobName;
 }
