@@ -17,7 +17,10 @@ namespace KiwiMind.Infrastructure.Chat;
 
 public class AzureOpenAiChatCompletionService : IChatCompletionService
 {
-    private const int MaxOutputTokens = 800;
+    // gpt-5-nano is a reasoning model: reasoning tokens are drawn from this
+    // same budget before any answer text, so it must be generous enough to
+    // cover reasoning + the grounded answer, or Content comes back empty.
+    private const int MaxOutputTokens = 2048;
     private readonly ChatClient chatClient;
 
     public AzureOpenAiChatCompletionService(IOptions<AzureOpenAiSettings> options)
