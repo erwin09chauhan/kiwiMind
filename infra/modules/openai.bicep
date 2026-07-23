@@ -27,8 +27,12 @@ resource chatDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-1
   parent: account
   name: chatDeploymentName
   sku: {
+    // Capacity is in units of 1,000 tokens/minute. Capacity 1 (1K TPM) is far
+    // too low for real document ingestion - a single ~4KB file's embedding
+    // batch exceeds it and gets 429-throttled, leaving the doc stuck in
+    // Processing. 30 (30K TPM) gives comfortable demo headroom within quota.
     name: 'GlobalStandard'
-    capacity: 1
+    capacity: 30
   }
   properties: {
     model: {
@@ -43,8 +47,12 @@ resource embeddingDeployment 'Microsoft.CognitiveServices/accounts/deployments@2
   parent: account
   name: embeddingDeploymentName
   sku: {
+    // Capacity is in units of 1,000 tokens/minute. Capacity 1 (1K TPM) is far
+    // too low for real document ingestion - a single ~4KB file's embedding
+    // batch exceeds it and gets 429-throttled, leaving the doc stuck in
+    // Processing. 30 (30K TPM) gives comfortable demo headroom within quota.
     name: 'GlobalStandard'
-    capacity: 1
+    capacity: 30
   }
   properties: {
     model: {
