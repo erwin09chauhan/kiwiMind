@@ -13,7 +13,7 @@
 
 ---
 
-## What is this? (the plain-English version)
+## What is this?
 
 Imagine you have a stack of documents — a contract, a research paper, a policy handbook — and you want answers without reading all of it. KiwiMind lets you:
 
