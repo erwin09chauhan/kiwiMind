@@ -8,7 +8,7 @@ import { formatFileSize, formatRelativeDate } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from './StatusBadge'
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024
+const MAX_FILE_SIZE = 2 * 1024 * 1024
 const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.txt', '.md']
 
 export function DocumentsTab({ knowledgeBaseId }: { knowledgeBaseId: string }) {
@@ -53,7 +53,7 @@ export function DocumentsTab({ knowledgeBaseId }: { knowledgeBaseId: string }) {
       return
     }
     if (file.size > MAX_FILE_SIZE) {
-      setUploadError(`“${file.name}” is ${formatFileSize(file.size)} — the limit is 10 MB.`)
+      setUploadError(`“${file.name}” is ${formatFileSize(file.size)} — the limit is 2 MB.`)
       return
     }
 
@@ -92,7 +92,7 @@ export function DocumentsTab({ knowledgeBaseId }: { knowledgeBaseId: string }) {
             {uploadMutation.isPending ? <Loader2 className="size-6 animate-spin" /> : <Upload className="size-6" />}
           </span>
           <span className="font-medium">{uploadMutation.isPending ? 'Uploading…' : 'Upload your first document'}</span>
-          <span className="text-muted-foreground text-xs">PDF, DOCX, TXT, or MD — up to 10MB</span>
+          <span className="text-muted-foreground text-xs">PDF, DOCX, TXT, or MD — up to 2MB</span>
         </button>
       )}
 

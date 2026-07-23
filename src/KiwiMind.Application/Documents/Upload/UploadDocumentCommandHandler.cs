@@ -17,7 +17,7 @@ public class UploadDocumentCommandHandler(
         ".pdf", ".docx", ".txt", ".md"
     };
 
-    private const long MaxFileSizeBytes = 10 * 1024 * 1024;
+    private const long MaxFileSizeBytes = 2 * 1024 * 1024;
     private const int MaxDocumentsPerKnowledgeBase = 20;
 
     public async Task<DocumentDto> Handle(UploadDocumentCommand request, CancellationToken cancellationToken)

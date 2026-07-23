@@ -9,6 +9,12 @@ namespace KiwiMind.Infrastructure.Ingestion;
 
 public class AzureOpenAiEmbeddingService : IEmbeddingService
 {
+    // Azure's embeddings endpoint rejects a single request with more than 2048
+    // inputs, and large batches blow the per-minute token budget in one shot.
+    // Send chunks in modest sub-batches so any document size succeeds; the
+    // SDK's built-in retry absorbs transient 429s between batches.
+    private const int BatchSize = 96;
+
     private readonly EmbeddingClient embeddingClient;
 
     public AzureOpenAiEmbeddingService(IOptions<AzureOpenAiSettings> options)
@@ -25,11 +31,16 @@ public class AzureOpenAiEmbeddingService : IEmbeddingService
             return [];
         }
 
-        var response = await embeddingClient.GenerateEmbeddingsAsync(
-            texts,
-            new EmbeddingGenerationOptions { Dimensions = IEmbeddingService.Dimensions },
-            cancellationToken);
+        var options = new EmbeddingGenerationOptions { Dimensions = IEmbeddingService.Dimensions };
+        var results = new List<float[]>(texts.Count);
 
-        return response.Value.Select(e => e.ToFloats().ToArray()).ToList();
+        for (var offset = 0; offset < texts.Count; offset += BatchSize)
+        {
+            var batch = texts.Skip(offset).Take(BatchSize).ToList();
+            var response = await embeddingClient.GenerateEmbeddingsAsync(batch, options, cancellationToken);
+            results.AddRange(response.Value.Select(e => e.ToFloats().ToArray()));
+        }
+
+        return results;
     }
 }
