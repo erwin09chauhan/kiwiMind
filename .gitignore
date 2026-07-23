@@ -73,6 +73,7 @@ docker-compose.override.yml
 .claude/
 kiwiMind-build-sheet.md
 azure-cost-guardrails-checklist.md
+launch-commands.txt
 
 ## Compiled Bicep output (regenerate with `az bicep build`, not source)
 infra/main.json
