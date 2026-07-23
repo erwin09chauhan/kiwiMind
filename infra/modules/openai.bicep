@@ -5,7 +5,7 @@ param name string
 param location string
 
 @description('Chat completion model deployment name.')
-param chatDeploymentName string = 'gpt-5-nano'
+param chatDeploymentName string = 'gpt-5-mini'
 
 @description('Embedding model deployment name.')
 param embeddingDeploymentName string = 'text-embedding-3-small'
@@ -33,7 +33,7 @@ resource chatDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-1
   properties: {
     model: {
       format: 'OpenAI'
-      name: 'gpt-5-nano'
+      name: 'gpt-5-mini'
       version: '2025-08-07'
     }
   }
