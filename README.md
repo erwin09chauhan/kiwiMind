@@ -104,7 +104,7 @@ flowchart TD
     API --> AI[Application Insights]
 ```
 
-The backend follows **Clean Architecture** — the domain and application logic don't depend on any infrastructure. AI providers sit behind interfaces (`IEmbeddingService`, `IChatCompletionService`), so Azure OpenAI can be swapped for a local model without touching business logic. In fact, the app ships with deterministic **fake** providers so the entire pipeline runs locally with **zero AI cost or API keys**.
+The backend follows **Clean Architecture** — the domain and application logic don't depend on any infrastructure. **The live demo runs on real Azure OpenAI** (`gpt-5-mini` for chat, `text-embedding-3-small` for embeddings). Because those providers sit behind interfaces (`IEmbeddingService`, `IChatCompletionService`), the same code also has deterministic **fake** implementations that kick in when no Azure OpenAI config is present — so anyone can run the entire pipeline locally with **zero AI cost or API keys**, and Azure OpenAI could be swapped for a local model without touching business logic.
 
 ---
 
