@@ -148,6 +148,15 @@ module containerApp 'modules/container-app.bicep' = {
     jwtSecret: jwtSecret
     appInsightsConnectionString: appInsights.outputs.connectionString
     corsAllowedOrigin: frontendOrigin
+    azureOpenAiEnabled: deployAzureOpenAi
+    #disable-next-line BCP318
+    azureOpenAiEndpoint: deployAzureOpenAi ? openAi.outputs.endpoint : ''
+    #disable-next-line BCP318
+    azureOpenAiApiKey: deployAzureOpenAi ? openAi.outputs.apiKey : ''
+    #disable-next-line BCP318
+    azureOpenAiChatDeploymentName: deployAzureOpenAi ? openAi.outputs.chatDeploymentName : ''
+    #disable-next-line BCP318
+    azureOpenAiEmbeddingDeploymentName: deployAzureOpenAi ? openAi.outputs.embeddingDeploymentName : ''
   }
   // Ensure the AcrPull grant is in place before the first revision pulls.
   dependsOn: [

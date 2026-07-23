@@ -33,8 +33,20 @@ public static class DependencyInjection
         services.AddSingleton<IDocumentIngestionQueue, DocumentIngestionQueue>();
         services.AddSingleton<ITextChunker, TextChunker>();
         services.AddSingleton<IDocumentTextExtractor, DocumentTextExtractor>();
-        services.AddSingleton<IEmbeddingService, FakeEmbeddingService>();
-        services.AddSingleton<IChatCompletionService, FakeChatCompletionService>();
+
+        services.Configure<AzureOpenAiSettings>(options => configuration.GetSection(AzureOpenAiSettings.SectionName).Bind(options));
+        var azureOpenAiEnabled = configuration.GetSection(AzureOpenAiSettings.SectionName).Get<AzureOpenAiSettings>()?.Enabled ?? false;
+        if (azureOpenAiEnabled)
+        {
+            services.AddSingleton<IEmbeddingService, AzureOpenAiEmbeddingService>();
+            services.AddSingleton<IChatCompletionService, AzureOpenAiChatCompletionService>();
+        }
+        else
+        {
+            services.AddSingleton<IEmbeddingService, FakeEmbeddingService>();
+            services.AddSingleton<IChatCompletionService, FakeChatCompletionService>();
+        }
+
         services.AddScoped<KnowledgeBasePlugin>();
         services.AddScoped<IChatAgent, SemanticKernelChatAgent>();
         services.AddHostedService<IngestionWorker>();

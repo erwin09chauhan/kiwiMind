@@ -6,6 +6,7 @@ using KiwiMind.Application.Documents.Upload;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace KiwiMind.Api.Controllers;
 
@@ -16,6 +17,7 @@ public class DocumentsController(ISender sender) : ControllerBase
 {
     [HttpPost]
     [RequestSizeLimit(10 * 1024 * 1024)]
+    [EnableRateLimiting("upload")]
     public async Task<ActionResult<DocumentDto>> Upload(Guid knowledgeBaseId, IFormFile file, CancellationToken cancellationToken)
     {
         await using var stream = file.OpenReadStream();

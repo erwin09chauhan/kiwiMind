@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using KiwiMind.Api;
 using KiwiMind.Api.Hubs;
 using KiwiMind.Application.Auth.Login;
@@ -9,6 +11,7 @@ using KiwiMind.Application.Common.Telemetry;
 using KiwiMind.Infrastructure;
 using KiwiMind.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using OpenTelemetry.Metrics;
@@ -86,6 +89,35 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
+// Demo-scoped abuse protection: unauthenticated auth endpoints are limited
+// per client IP; chat/upload are limited per authenticated user since a
+// single account could otherwise rack up unbounded LLM/storage cost.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    static string PartitionKey(HttpContext httpContext) =>
+        httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "unknown";
+
+    options.AddPolicy("auth", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        PartitionKey(httpContext),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
+
+    options.AddPolicy("register", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        PartitionKey(httpContext),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(1) }));
+
+    options.AddPolicy("chat", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        PartitionKey(httpContext),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1) }));
+
+    options.AddPolicy("upload", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        PartitionKey(httpContext),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromHours(1) }));
+});
+
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
@@ -109,6 +141,7 @@ app.UseCors("Frontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 app.MapHealthChecks("/health");

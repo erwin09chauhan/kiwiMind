@@ -7,6 +7,7 @@ using KiwiMind.Application.Conversations.SendMessage;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace KiwiMind.Api.Controllers;
 
@@ -44,6 +45,7 @@ public class ConversationsController(ISender sender) : ControllerBase
     }
 
     [HttpPost("{id:guid}/messages")]
+    [EnableRateLimiting("chat")]
     public async Task<ActionResult<MessageDto>> SendMessage(
         Guid knowledgeBaseId, Guid id, [FromBody] SendMessageRequest request, CancellationToken cancellationToken)
     {

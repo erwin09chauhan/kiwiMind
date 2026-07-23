@@ -27,7 +27,7 @@ resource chatDeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-1
   parent: account
   name: chatDeploymentName
   sku: {
-    name: 'Standard'
+    name: 'GlobalStandard'
     capacity: 1
   }
   properties: {
@@ -43,7 +43,7 @@ resource embeddingDeployment 'Microsoft.CognitiveServices/accounts/deployments@2
   parent: account
   name: embeddingDeploymentName
   sku: {
-    name: 'Standard'
+    name: 'GlobalStandard'
     capacity: 1
   }
   properties: {

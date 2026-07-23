@@ -36,6 +36,17 @@ param appInsightsConnectionString string = ''
 @description('Origin allowed to call this API via CORS (the deployed frontend URL).')
 param corsAllowedOrigin string = ''
 
+@description('Enable real Azure OpenAI providers instead of the Fake ones. Requires the other azureOpenAi* params to be set.')
+param azureOpenAiEnabled bool = false
+
+param azureOpenAiEndpoint string = ''
+
+@secure()
+param azureOpenAiApiKey string = ''
+
+param azureOpenAiChatDeploymentName string = ''
+param azureOpenAiEmbeddingDeploymentName string = ''
+
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: name
   location: location
@@ -64,6 +75,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
         { name: 'connectionstrings--default', value: postgresConnectionString }
         { name: 'blobstorage--connectionstring', value: blobStorageConnectionString }
         { name: 'jwt--secret', value: jwtSecret }
+        { name: 'azureopenai--apikey', value: azureOpenAiApiKey }
       ]
     }
     template: {
@@ -86,6 +98,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'Jwt__Audience', value: jwtAudience }
             { name: 'Cors__AllowedOrigins__0', value: corsAllowedOrigin }
             { name: 'ApplicationInsights__ConnectionString', value: appInsightsConnectionString }
+            { name: 'AzureOpenAI__Enabled', value: string(azureOpenAiEnabled) }
+            { name: 'AzureOpenAI__Endpoint', value: azureOpenAiEndpoint }
+            { name: 'AzureOpenAI__ApiKey', secretRef: 'azureopenai--apikey' }
+            { name: 'AzureOpenAI__ChatDeploymentName', value: azureOpenAiChatDeploymentName }
+            { name: 'AzureOpenAI__EmbeddingDeploymentName', value: azureOpenAiEmbeddingDeploymentName }
           ]
           // No custom readiness probe: this app-specific /health path only
           // exists on the real kiwimind-api image, not the bootstrap

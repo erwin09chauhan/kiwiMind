@@ -10,6 +10,4 @@ param location = 'australiaeast'
 param postgresAdminPassword = ''
 param jwtSecret = ''
 
-// Azure OpenAI requires access to be approved for the subscription first -
-// see kiwiMind-build-sheet.md section 9. Leave false until approved.
-param deployAzureOpenAi = false
+param deployAzureOpenAi = true

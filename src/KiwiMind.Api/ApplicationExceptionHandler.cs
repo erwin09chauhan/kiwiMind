@@ -14,6 +14,8 @@ public class ApplicationExceptionHandler : IExceptionHandler
             InvalidRefreshTokenException => StatusCodes.Status401Unauthorized,
             NotFoundException => StatusCodes.Status404NotFound,
             InvalidFileException => StatusCodes.Status400BadRequest,
+            QuotaExceededException => StatusCodes.Status400BadRequest,
+            MessageTooLongException => StatusCodes.Status400BadRequest,
             _ => 0
         };
 

@@ -15,8 +15,15 @@ public class SendMessageCommandHandler(
     IChatAgent chatAgent,
     ILogger<SendMessageCommandHandler> logger) : IRequestHandler<SendMessageCommand, MessageDto>
 {
+    private const int MaxContentLength = 4000;
+
     public async Task<MessageDto> Handle(SendMessageCommand request, CancellationToken cancellationToken)
     {
+        if (request.Content.Length > MaxContentLength)
+        {
+            throw new MessageTooLongException($"Message exceeds the maximum allowed length of {MaxContentLength} characters.");
+        }
+
         var conversationExists = await db.Conversations
             .AnyAsync(c => c.Id == request.ConversationId
                 && c.KnowledgeBaseId == request.KnowledgeBaseId

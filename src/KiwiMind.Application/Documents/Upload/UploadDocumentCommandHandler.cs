@@ -18,6 +18,7 @@ public class UploadDocumentCommandHandler(
     };
 
     private const long MaxFileSizeBytes = 10 * 1024 * 1024;
+    private const int MaxDocumentsPerKnowledgeBase = 20;
 
     public async Task<DocumentDto> Handle(UploadDocumentCommand request, CancellationToken cancellationToken)
     {
@@ -26,6 +27,13 @@ public class UploadDocumentCommandHandler(
         if (!knowledgeBaseExists)
         {
             throw new NotFoundException(nameof(KnowledgeBase), request.KnowledgeBaseId);
+        }
+
+        var existingDocumentCount = await db.Documents
+            .CountAsync(d => d.KnowledgeBaseId == request.KnowledgeBaseId, cancellationToken);
+        if (existingDocumentCount >= MaxDocumentsPerKnowledgeBase)
+        {
+            throw new QuotaExceededException($"A knowledge base can have at most {MaxDocumentsPerKnowledgeBase} documents.");
         }
 
         var extension = Path.GetExtension(request.FileName);
