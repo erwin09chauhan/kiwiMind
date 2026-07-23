@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { tokenStorage } from './token-storage'
+import { notifyRequestStart, notifyRequestEnd } from './server-wake'
 import type { AuthResult } from '@/types/api'
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
@@ -7,6 +8,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localho
 export const apiClient = axios.create({ baseURL: API_BASE_URL })
 
 apiClient.interceptors.request.use((config) => {
+  notifyRequestStart()
   const accessToken = tokenStorage.getAccessToken()
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`
@@ -32,8 +34,12 @@ interface RetriableRequestConfig extends InternalAxiosRequestConfig {
 }
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    notifyRequestEnd()
+    return response
+  },
   async (error: AxiosError) => {
+    notifyRequestEnd()
     const originalRequest = error.config as RetriableRequestConfig | undefined
 
     if (error.response?.status !== 401 || !originalRequest || originalRequest._retried) {

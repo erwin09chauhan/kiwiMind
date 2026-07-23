@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from '@/components/Layout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { ServerWakeBanner } from '@/components/ServerWakeBanner'
 import { LoginPage } from '@/pages/LoginPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { KnowledgeBasesPage } from '@/pages/KnowledgeBasesPage'
@@ -9,7 +10,9 @@ import { ConversationPage } from '@/pages/ConversationPage'
 
 export function App() {
   return (
-    <Routes>
+    <>
+      <ServerWakeBanner />
+      <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
@@ -21,7 +24,8 @@ export function App() {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/knowledge-bases" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/knowledge-bases" replace />} />
+      </Routes>
+    </>
   )
 }
