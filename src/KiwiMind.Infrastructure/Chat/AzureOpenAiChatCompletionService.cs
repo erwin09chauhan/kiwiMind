@@ -10,17 +10,12 @@ using OpenAIChatMessage = OpenAI.Chat.ChatMessage;
 using SystemChatMessage = OpenAI.Chat.SystemChatMessage;
 using UserChatMessage = OpenAI.Chat.UserChatMessage;
 using AssistantChatMessage = OpenAI.Chat.AssistantChatMessage;
-using ChatCompletionOptions = OpenAI.Chat.ChatCompletionOptions;
 using ChatClient = OpenAI.Chat.ChatClient;
 
 namespace KiwiMind.Infrastructure.Chat;
 
 public class AzureOpenAiChatCompletionService : IChatCompletionService
 {
-    // gpt-5-mini is a reasoning model: reasoning tokens are drawn from this
-    // same budget before any answer text, so it must be generous enough to
-    // cover reasoning + the grounded answer, or Content comes back empty.
-    private const int MaxOutputTokens = 2048;
     private readonly ChatClient chatClient;
 
     public AzureOpenAiChatCompletionService(IOptions<AzureOpenAiSettings> options)
@@ -64,10 +59,11 @@ public class AzureOpenAiChatCompletionService : IChatCompletionService
 
         messages.Add(new UserChatMessage($"Sources:\n{sourcesBlock}\nQuestion: {question}"));
 
-        var response = await chatClient.CompleteChatAsync(
-            messages,
-            new ChatCompletionOptions { MaxOutputTokenCount = MaxOutputTokens },
-            cancellationToken);
+        // Note: intentionally no ChatCompletionOptions. Setting MaxOutputTokenCount
+        // in this SDK version serializes to the legacy `max_tokens` field, which
+        // gpt-5 reasoning models reject with HTTP 400 ("use max_completion_tokens").
+        // The grounded prompt keeps answers short, so we rely on the model default.
+        var response = await chatClient.CompleteChatAsync(messages, cancellationToken: cancellationToken);
 
         return response.Value.Content.Count > 0 ? response.Value.Content[0].Text : string.Empty;
     }
